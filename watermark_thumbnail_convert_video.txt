@@ -1,0 +1,29 @@
+
+			$ffmpeg = FFMpeg\FFMpeg::create(array(
+				'ffmpeg.binaries'  => 'C://ffmpeg/bin/ffmpeg.exe', 
+				'ffprobe.binaries' => 'C://ffmpeg/bin/ffprobe.exe', 
+         'timeout'          => 3600, // The timeout for the underlying process
+         'ffmpeg.threads'   => 12,   // The number of threads that FFMpeg should use
+         ));
+			
+
+			$video = $ffmpeg->open($request->file('video'));
+			$video
+			->filters()
+			->resize(new FFMpeg\Coordinate\Dimension(320, 240))
+			->synchronize();
+
+			$video
+			->filters()
+			->watermark("public/vrl_logo.png", array(
+				'position' => 'absolute',
+				'x' => 50,
+				'y' => 100,
+				));
+			
+			$format = new FFMpeg\Format\Video\X264('libmp3lame', 'libx264');
+			$video->save($format, 'test.mp4');
+			exit;
+			$video
+			->frame(FFMpeg\Coordinate\TimeCode::fromSeconds(2))
+			->save('frame.jpg');
