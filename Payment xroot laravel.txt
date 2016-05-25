@@ -3,11 +3,19 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-
+use Illuminate\Support\Facades\Validator;
 use App\Http\Requests;
 use Paypalpayment;
+use App\Video;
+use App\Profile;
+use App\User;
+use App\Payment;
 use Session;
 use Redirect;
+use DB;
+use Hash;
+use Mail;
+
 
 class PaymentController extends Controller
 {
@@ -33,174 +41,284 @@ class PaymentController extends Controller
 			));
 
 	}
+	/*-----------------------------------Checkout Form -------------------------------------*/
 
-	public function order()
-	{
-		return view('payment.order');
+
+	public function order($video_id){
+		$video = Video::find($video_id);
+		return view('payment.order',['video'=>$video]);
 	}
 
-	public function store(Request $request)
-	{ 
-		$addr= Paypalpayment::address();
-		$addr->setLine1("3909 Witmer Road");
-		$addr->setLine2("Niagara Falls");
-		$addr->setCity("Niagara Falls");
-		$addr->setState("NY");
-		$addr->setPostalCode("14305");
-		$addr->setCountryCode("US");
-		$addr->setPhone("716-298-1822");
-
-		
-
-        // ### CreditCard
-		$card = Paypalpayment::creditCard();
-		$card->setType("visa")
-		->setNumber("4032030908162994")
-		->setExpireMonth("06")
-		->setExpireYear("2021")
-		->setCvv2("456")
-		->setFirstName($request->first_name)
-		->setLastName($request->first_name);
-
-        // ### FundingInstrument
-        // A resource representing a Payer's funding instrument.
-        // Use a Payer ID (A unique identifier of the payer generated
-        // and provided by the facilitator. This is required when
-        // creating or using a tokenized funding instrument)
-        // and the `CreditCardDetails`
-		$fi = Paypalpayment::fundingInstrument();
-		$fi->setCreditCard($card);
-
-        // ### Payer
-        // A resource representing a Payer that funds a payment
-        // Use the List of `FundingInstrument` and the Payment Method
-        // as 'credit_card'
-		$payer = Paypalpayment::payer();
-		$payer->setPaymentMethod("PAYPAL");
-		// ->setFundingInstruments(array($fi));
-
-		$item1 = Paypalpayment::item();
-		$item1->setName('Ground Coffee 40 oz')
-		->setDescription('Ground Coffee 40 oz')
-		->setCurrency('USD')
-		->setQuantity(1)
-		->setTax(0.3)
-		->setPrice(7.50);
-
-		$item2 = Paypalpayment::item();
-		$item2->setName('Granola bars')
-		->setDescription('Granola Bars with Peanuts')
-		->setCurrency('USD')
-		->setQuantity(5)
-		->setTax(0.2)
-		->setPrice(2);
 
 
-		$itemList = Paypalpayment::itemList();
-		$itemList->setItems(array($item1,$item2));
+	
+	public function store(Request $request){
 
+		$validator = Validator::make($request->all(),array(
+			'user_email' =>'required',
+			'password' =>'required|min:6',
+			'first_name' =>'required',
+			'last_name' =>'required',
+			'address_1' =>'required',
+			'state' =>'required',
+			'zip' =>'required',
+			'country' =>'required',
+			'city'=>'required',             
+			'phone'=>'required'             
+			)
+		);
 
-		$details = Paypalpayment::details();
-		$details->setShipping("1.2")
-		->setTax("1.3")
-                //total of items prices
-		->setSubtotal("17.5");
-
-        //Payment Amount
-		$amount = Paypalpayment::amount();
-		$amount->setCurrency("USD")
-                // the total is $17.8 = (16 + 0.6) * 1 ( of quantity) + 1.2 ( of Shipping).
-		->setTotal("20")
-		->setDetails($details);
-
-
-        // ### Transaction
-        // A transaction defines the contract of a
-        // payment - what is the payment for and who
-        // is fulfilling it. Transaction is created with
-        // a `Payee` and `Amount` types
-
-		$transaction = Paypalpayment::transaction();
-		$transaction->setAmount($amount)
-		->setItemList($itemList)
-		->setDescription("Payment description")
-		->setInvoiceNumber(uniqid());
-
-        // ### Payment
-        // A Payment Resource; create one using
-        // the above types and intent as 'sale'
-		$baseUrl = 'http://localhost/vrl/';
-
-		$redirectUrls = Paypalpayment::redirectUrls();
-		$redirectUrls->setReturnUrl($baseUrl.'payment/confirm');
-		$redirectUrls->setCancelUrl($baseUrl.'payment/cancel');
-
-
-
-
-		$payment = Paypalpayment::payment();
-
-		$payment->setIntent("sale")
-		->setPayer($payer)
-		->setTransactions(array($transaction))
-		->setRedirectUrls($redirectUrls);
-
-		try {
-
-			$payment->create($this->_apiContext);
-			// $response = $payment->create($this->_apiContext);
-			// $this->_paymentId = $response->id;
-
-			//$redirectUrl = $response->links[0]->href;
-			// exit;
-			// return Redirect::to( $redirectUrl );
-
-
-		} catch (PayPalConnectionException $e) {
-			echo $e->getData();
-    // Perhaps log an error
-			header('Location: ../PayPall/error.php');
-
+		if($validator->fails())
+		{
+			return redirect('Buy/'.$request->video_id)->withErrors($validator)->withInput();
 		}
+		else
+		{
+			$email = DB::table('profiles')->where('EmailId',$request->user_email)->first();
 
-		
+			if(count($email) > 0){
 
-  //   // add payment ID to session
-		Session::put('paypal_payment_id', $payment->getId());
-		
-		foreach($payment->getLinks() as $link) {
-			if($link->getRel() == 'approval_url') {
-				$redirectUrls = $link->getHref();
-				break;
+				return redirect('Buy/'.$request->video_id)->with('register_error',"Email Already Exist");
 			}
-		}
-		if(isset($redirectUrls)) {
-  //       // redirect to paypal
-			return Redirect::away($redirectUrls);
-		}
+			else 
+			{
+				Session::put('user_email',$request->user_email);
+				Session::put('password',$request->password);
+				Session::put('first_name',$request->first_name);
+				Session::put('last_name',$request->last_name);
+				Session::put('address_1',$request->address_1);
+				if($request->address_2 != ""){
+					Session::put('address_2',$request->address_2);
+				}
+				Session::put('last_name',$request->last_name);
+				Session::put('country',$request->country);
+				Session::put('city',$request->city);
+				Session::put('state',$request->state);
+				Session::put('zip',$request->zip);
+				Session::put('phone',$request->phone);
+				Session::put('video_id',$request->video_id);
 
-		return Redirect::route('http://localhost/vrl/payment')
-		->with('error', 'Unknown error occurred');
+				/*-----------------------------------Setting Address----------------------------------*/
 
-		// echo "<pre>"; print_r($payment);echo "</pre>";
-	} 
+				$addr= Paypalpayment::address();
+				$addr->setLine1($request->address_1);
+				if($request->address_2 != "" ){
+					$addr->setLine2($request->address_2);
+				}
+				$addr->setCity($request->city);
+				$addr->setState($request->state);
+				$addr->setPostalCode($request->zip);
+				$addr->setCountryCode("USD");
+				$addr->setPhone($request->phone);
 
-	public function index()
-	{
-		echo "<pre>";
+				/*---------------------------------Setting Paying Method-------------------------------*/
 
-		$payments = Paypalpayment::getAll(array('count' => 1, 'start_index' => 0), $this->_apiContext);
+				$payer = Paypalpayment::payer();
+				$payer->setPaymentMethod("PAYPAL");
 
-		dd($payments);
+				/*-------------------------------Setting Item Information------------------------------*/
+				$item1 = Paypalpayment::item();
+				$item1->setName($request->item_name)
+				->setDescription('Hi this is video testing description')
+				->setCurrency('USD')
+				->setQuantity(1)
+				->setPrice($request->amount);
+
+
+				$itemList = Paypalpayment::itemList();
+				$itemList->setItems(array($item1));
+
+
+				$amount = Paypalpayment::amount();
+				$amount->setCurrency("USD")
+
+				->setTotal($request->amount);
+
+
+				/*-------------------------------Transaction Information------------------------------*/
+
+      /*   Transaction
+      A transaction defines the contract of a payment - what is the payment for and who is fulfilling it. Transaction is created with a `Payee` and `Amount` types */
+
+      $transaction = Paypalpayment::transaction();
+      $transaction->setAmount($amount)
+      ->setItemList($itemList)
+      ->setDescription("Payment description")
+      ->setInvoiceNumber(uniqid());
+
+
+      /*---------------------------------Rediecting Urls--------------------------------*/
+
+      $baseUrl = 'http://vrl.projects-codingbrains.com/';
+
+      $redirectUrls = Paypalpayment::redirectUrls();
+      $redirectUrls->setReturnUrl($baseUrl.'save_payment');
+      $redirectUrls->setCancelUrl($baseUrl.'payment/cancel');
+
+      /*-------------------------------Payment Information--------------------------------*/
+        /* Payment
+        A Payment Resource; create one using the above types and intent as 'sale' */
+
+        $payment = Paypalpayment::payment();
+
+        $payment->setIntent("sale")
+        ->setPayer($payer)
+        ->setTransactions(array($transaction))
+        ->setRedirectUrls($redirectUrls);
+
+        try {
+
+        	$payment->create($this->_apiContext);
+
+        } catch (PayPalConnectionException $e) {
+        	echo $e->getData();
+        }
+
+
+
+        /*------------------------- add payment ID to session ----------------*/
+
+        Session::put('paypal_payment_id', $payment->getId());
+
+        /*-------------------------Getting approve Url ----------------*/
+        foreach($payment->getLinks() as $link) {
+        	if($link->getRel() == 'approval_url') {
+
+        		$redirectUrls = $link->getHref();
+        		break;
+        	}
+        }
+        /* ----------------redirect to paypal ----------------*/
+        if(isset($redirectUrls)) {
+        	
+        	return Redirect::away($redirectUrls);
+        }
+
+        return Redirect::route('http://vrl.projects-codingbrains.com/payment')
+        ->with('error', 'Unknown error occurred');
+
+
+    } 
+} 
+} 
+
+
+public function save_payment(Request $request)
+{
+	if (empty($request->PayerID) || empty($request->token)) {
+		echo 'Payment failed';
 	}
+	else{
 
-	public function show()
-	{
-		$payment_id = 'PAY-9G176671KN251464JK43EW6Y';
+		$payment_id = Session::get('paypal_payment_id');
+
 		$payment = Paypalpayment::getById($payment_id,$this->_apiContext);
 
-		dd($payment);
+		$execution = Paypalpayment::paymentExecution();
+		$execution->setPayerId($request->PayerID);
+
+		$result = $payment->execute($execution, $this->_apiContext);
+
+		
+		if ($result->getState() == 'approved') { 
+
+
+			$users = new User();
+			$Profile = new Profile();
+			$is_account_active=0;
+			$is_email_active=0;
+			$type='User';
+			$users->user_name= Session::get('first_name')." ". Session::get('last_name');
+			$Profile->Name= Session::get('first_name')." ". Session::get('last_name');
+			$users->email= Session::get('user_email');
+			$Profile->EmailId= Session::get('user_email');
+			$users->password= Hash::make(Session::get('password'));
+			$users->remember_token = Session::get('password');
+			$users->is_account_active = $is_account_active;
+			$users->is_email_active = $is_email_active;
+			$users->type = 'User';
+			$Profile->Type = 'User';
+
+			$Profile->save();
+			$profile_id = $Profile->ProfileId; 
+			$users->profile_id = $profile_id;
+
+			$auth_pass = str_random(15);
+			$users->auth_pass = $auth_pass;
+			$confirmation_code['confirmation_code'] = encrypt($auth_pass);
+
+			$payment = new Payment();
+			$payment->profile_id = $profile_id;
+			$payment->video_id = Session::get('video_id');
+			$payment->country = Session::get('country');
+			$payment->state = Session::get('state');
+			$payment->city = Session::get('city');
+			$payment->zip = Session::get('zip');
+			$payment->phone = Session::get('phone');
+			$payment->payment_id = $request->paymentId;
+			$payment->token = $request->token;
+			$payment->payer_id = $request->PayerID;
+
+
+			if($users->save() && $payment->save()){
+
+				Mail::send('emails.reminder', $confirmation_code, function ($message) use ($users) {
+					$message->from('codingbrains6@gmail.com', 'Confirmation Register');
+					$message->to($users->email, $users->user_name);
+					$message->subject('Email Confirmation');
+				});
+				echo "success";
+				Session::flush();
+				dd($request->all());
+		// return redirect('UserSignup')->with('success','Successfully Registered');
+			}
+			else{
+		// return redirect('UserSignup')->with('register_error',"Oops..!Something went wrong");
+				echo "fail";
+
+			}
+
+		}
+		else{
+			echo "not approved";
+		}
 	}
+}
+
+
+public function index()
+{
+	// echo "<pre>";
+
+	// $payments = Paypalpayment::getAll(array('count' => 1, 'start_index' => 0), $this->_apiContext);
+
+	// dd($payments);
+}
+
+public function confirm(Request $request)
+{
+
+
+	// dd($request->all());
+	dd(Session::all());
+
+	//echo "<pre>";
+
+	//$payments = Paypalpayment::getAll(array('count' => 1, 'start_index' => 0), $this->_apiContext);
+
+	//dd($payments);
+}
+
+public function show(Request $request)
+{
+	
+
+	// $payment_id = 'PAY-9G176671KN251464JK43EW6Y';
+	// $payment = Paypalpayment::getById($payment_id,$this->_apiContext);
+
+	// dd($payment);
+}
+
 
 
 
