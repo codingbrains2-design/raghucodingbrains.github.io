@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport"    content="width=device-width, initial-scale=1.0">
+	<meta name="description" content="">
+	<meta name="author"      content="Sergey Pozhilov (GetTemplate.com)">
+	
+	<title>Paypal | Raghvendra </title>
+
+	<link rel="shortcut icon" href="assets/images/gt_favicon.png">
+	
+	<!-- Bootstrap -->
+	<link href="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.no-icons.min.css" rel="stylesheet">
+	<!-- Icon font -->
+	<link href="http://netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" rel="stylesheet">
+	<!-- Fonts -->
+	<link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Alice|Open+Sans:400,300,700">
+	<!-- Custom styles -->
+	<link rel="stylesheet" href="assets/css/styles.css">
+
+	<!--[if lt IE 9]> <script src="assets/js/html5shiv.js"></script> <![endif]-->
+</head>
+<body>
+
+
+	<main id="main">
+
+		<div class="container">
+
+			<div class="row topspace">
+
+				<!-- Article main content -->
+				<article class="col-sm-12 maincontent">
+					<header class="page-header">
+						<h1 class="page-title">Paypal Payment integration in laravel</h1>
+					</header>
+
+					<p><img src="assets/images/paypal.jpg" alt=""></p>
+
+					<pre>
+						&lt;?php
+
+						namespace App\Http\Controllers;
+
+						use Illuminate\Http\Request;
+						use Illuminate\Support\Facades\Validator;
+						use App\Http\Requests;
+						use Paypalpayment;
+						use App\Video;
+						use App\Profile;
+						use App\User;
+						use App\Payment;
+						use Session;
+						use Redirect;
+						use DB;
+						use Hash;
+						use Mail;
+
+
+						class PaymentController extends Controller
+						{
+
+						private $_apiContext;
+
+						private $_ClientId='ATIED-FXjSO8NHXHau8ujdzdnr2RiiB2pMoGHzgXiheQi37KeLMXnZN3SS6OiGWIeYn7W5IA9NA5XogP';
+						private $_ClientSecret='EEcXdHTP2c6l5V7TPhClzbQvust0oRMu5YmaVLKtv-nsVBSQgtTesnbmHWz2dVUqaug9pMHGWpJAaFoM';
+
+						public function __construct()
+						{
+
+
+						$this->_apiContext = Paypalpayment::apiContext($this->_ClientId, $this->_ClientSecret);
+
+
+						$this->_apiContext->setConfig(array(
+						'mode' => 'sandbox',
+						'http.ConnectionTimeOut' => 30,
+						'log.LogEnabled' => true,
+						'log.FileName' => __DIR__.'/../PayPal.log',
+						'log.LogLevel' => 'FINE'
+						));
+
+					}
+					/*-----------------------------------Checkout Form -------------------------------------*/
+
+
+					public function order($video_id){
+					$video = Video::find($video_id);
+					return view('payment.order',['video'=>$video]);
+				}
+
+
+
+
+				public function store(Request $request){
+
+				$validator = Validator::make($request->all(),array(
+				'user_email' =>'required',
+				'password' =>'required|min:6',
+				'first_name' =>'required',
+				'last_name' =>'required',
+				'address_1' =>'required',
+				'state' =>'required',
+				'zip' =>'required',
+				'country' =>'required',
+				'city'=>'required',             
+				'phone'=>'required'             
+				)
+				);
+
+				if($validator->fails())
+				{
+				return redirect('Buy/'.$request->video_id)->withErrors($validator)->withInput();
+			}
+			else
+			{
+			$email = DB::table('profiles')->where('EmailId',$request->user_email)->first();
+
+			if(count($email) > 0){
+
+			return redirect('Buy/'.$request->video_id)->with('register_error',"Email Already Exist");
+		}
+		else 
+		{
+		Session::put('user_email',$request->user_email);
+		Session::put('password',$request->password);
+		Session::put('first_name',$request->first_name);
+		Session::put('last_name',$request->last_name);
+		Session::put('address_1',$request->address_1);
+		if($request->address_2 != ""){
+		Session::put('address_2',$request->address_2);
+	}
+	Session::put('last_name',$request->last_name);
+	Session::put('country',$request->country);
+	Session::put('city',$request->city);
+	Session::put('state',$request->state);
+	Session::put('zip',$request->zip);
+	Session::put('phone',$request->phone);
+	Session::put('video_id',$request->video_id);
+
+	/*-----------------------------------Setting Address----------------------------------*/
+
+	$addr= Paypalpayment::address();
+	$addr->setLine1($request->address_1);
+	if($request->address_2 != "" ){
+	$addr->setLine2($request->address_2);
+}
+$addr->setCity($request->city);
+$addr->setState($request->state);
+$addr->setPostalCode($request->zip);
+$addr->setCountryCode("USD");
+$addr->setPhone($request->phone);
+
+/*---------------------------------Setting Paying Method-------------------------------*/
+
+$payer = Paypalpayment::payer();
+$payer->setPaymentMethod("PAYPAL");
+
+/*-------------------------------Setting Item Information------------------------------*/
+$item1 = Paypalpayment::item();
+$item1->setName($request->item_name)
+->setDescription('Hi this is video testing description')
+->setCurrency('USD')
+->setQuantity(1)
+->setPrice($request->amount);
+
+
+$itemList = Paypalpayment::itemList();
+$itemList->setItems(array($item1));
+
+
+$amount = Paypalpayment::amount();
+$amount->setCurrency("USD")
+
+->setTotal($request->amount);
+
+
+/*-------------------------------Transaction Information------------------------------*/
+
+/*   Transaction
+A transaction defines the contract of a payment - what is the payment for and who is fulfilling it. Transaction is created with a `Payee` and `Amount` types */
+
+$transaction = Paypalpayment::transaction();
+$transaction->setAmount($amount)
+->setItemList($itemList)
+->setDescription("Payment description")
+->setInvoiceNumber(uniqid());
+
+
+/*---------------------------------Rediecting Urls--------------------------------*/
+
+$baseUrl = 'http://vrl.projects-codingbrains.com/';
+
+$redirectUrls = Paypalpayment::redirectUrls();
+$redirectUrls->setReturnUrl($baseUrl.'save_payment');
+$redirectUrls->setCancelUrl($baseUrl.'payment/cancel');
+
+/*-------------------------------Payment Information--------------------------------*/
+/* Payment
+A Payment Resource; create one using the above types and intent as 'sale' */
+
+$payment = Paypalpayment::payment();
+
+$payment->setIntent("sale")
+->setPayer($payer)
+->setTransactions(array($transaction))
+->setRedirectUrls($redirectUrls);
+
+try {
+
+$payment->create($this->_apiContext);
+
+} catch (PayPalConnectionException $e) {
+echo $e->getData();
+}
+
+
+
+/*------------------------- add payment ID to session ----------------*/
+
+Session::put('paypal_payment_id', $payment->getId());
+
+/*-------------------------Getting approve Url ----------------*/
+foreach($payment->getLinks() as $link) {
+if($link->getRel() == 'approval_url') {
+
+$redirectUrls = $link->getHref();
+break;
+}
+}
+/* ----------------redirect to paypal ----------------*/
+if(isset($redirectUrls)) {
+
+return Redirect::away($redirectUrls);
+}
+
+return Redirect::route('http://vrl.projects-codingbrains.com/payment')
+->with('error', 'Unknown error occurred');
+
+
+} 
+} 
+} 
+
+
+public function save_payment(Request $request)
+{
+	if (empty($request->PayerID) || empty($request->token)) {
+	echo 'Payment failed';
+}
+else{
+
+$payment_id = Session::get('paypal_payment_id');
+
+$payment = Paypalpayment::getById($payment_id,$this->_apiContext);
+
+$execution = Paypalpayment::paymentExecution();
+$execution->setPayerId($request->PayerID);
+
+$result = $payment->execute($execution, $this->_apiContext);
+
+
+if ($result->getState() == 'approved') { 
+
+
+$users = new User();
+$Profile = new Profile();
+$is_account_active=0;
+$is_email_active=0;
+$type='User';
+$users->user_name= Session::get('first_name')." ". Session::get('last_name');
+$Profile->Name= Session::get('first_name')." ". Session::get('last_name');
+$users->email= Session::get('user_email');
+$Profile->EmailId= Session::get('user_email');
+$users->password= Hash::make(Session::get('password'));
+$users->remember_token = Session::get('password');
+$users->is_account_active = $is_account_active;
+$users->is_email_active = $is_email_active;
+$users->type = 'User';
+$Profile->Type = 'User';
+
+$Profile->save();
+$profile_id = $Profile->ProfileId; 
+$users->profile_id = $profile_id;
+
+$auth_pass = str_random(15);
+$users->auth_pass = $auth_pass;
+$confirmation_code['confirmation_code'] = encrypt($auth_pass);
+
+$payment = new Payment();
+$payment->profile_id = $profile_id;
+$payment->video_id = Session::get('video_id');
+$payment->country = Session::get('country');
+$payment->state = Session::get('state');
+$payment->city = Session::get('city');
+$payment->zip = Session::get('zip');
+$payment->phone = Session::get('phone');
+$payment->payment_id = $request->paymentId;
+$payment->token = $request->token;
+$payment->payer_id = $request->PayerID;
+
+
+if($users->save() && $payment->save()){
+
+Mail::send('emails.reminder', $confirmation_code, function ($message) use ($users) {
+$message->from('codingbrains6@gmail.com', 'Confirmation Register');
+$message->to($users->email, $users->user_name);
+$message->subject('Email Confirmation');
+});
+echo "success";
+Session::flush();
+dd($request->all());
+// return redirect('UserSignup')->with('success','Successfully Registered');
+}
+else{
+// return redirect('UserSignup')->with('register_error',"Oops..!Something went wrong");
+echo "fail";
+
+}
+
+}
+else{
+echo "not approved";
+}
+}
+}
+
+
+}
+
+</pre>
+
+</article>
+<!-- /Article -->
+
+<!-- Sidebar -->
+
+
+</div>
+</div>	<!-- /container -->
+
+</main>
+
+<footer id="footer" class="topspace">
+	<div class="container">
+		<div class="row">
+			<div class="col-md-3 widget">
+				<h3 class="widget-title">Contact</h3>
+				<div class="widget-body">
+					<p>+234 23 9873237<br>
+						<a href="mailto:#">some.email@somewhere.com</a><br>
+						<br>
+						234 Hidden Pond Road, Ashland City, TN 37015
+					</p>	
+				</div>
+			</div>
+
+			<div class="col-md-3 widget">
+				<h3 class="widget-title">Follow me</h3>
+				<div class="widget-body">
+					<p class="follow-me-icons">
+						<a href=""><i class="fa fa-twitter fa-2"></i></a>
+						<a href=""><i class="fa fa-dribbble fa-2"></i></a>
+						<a href=""><i class="fa fa-github fa-2"></i></a>
+						<a href=""><i class="fa fa-facebook fa-2"></i></a>
+					</p>
+				</div>
+			</div>
+
+			<div class="col-md-3 widget">
+				<h3 class="widget-title">Text widget</h3>
+				<div class="widget-body">
+					<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Atque, nihil natus explicabo ipsum quia iste aliquid repellat eveniet velit ipsa sunt libero sed aperiam id soluta officia asperiores adipisci maxime!</p>
+					<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Atque, nihil natus explicabo ipsum quia iste aliquid repellat eveniet velit ipsa sunt libero sed aperiam id soluta officia asperiores adipisci maxime!</p>
+				</div>
+			</div>
+
+			<div class="col-md-3 widget">
+				<h3 class="widget-title">Form widget</h3>
+				<div class="widget-body">
+					<p>+234 23 9873237<br>
+						<a href="mailto:#">some.email@somewhere.com</a><br>
+						<br>
+						234 Hidden Pond Road, Ashland City, TN 37015
+					</p>	
+				</div>
+			</div>
+
+		</div> <!-- /row of widgets -->
+	</div>
+</footer>
+
+<footer id="underfooter">
+	<div class="container">
+		<div class="row">
+
+			<div class="col-md-6 widget">
+				<div class="widget-body">
+					<p>234 Hidden Pond Road, Ashland City, TN 37015 </p>
+				</div>
+			</div>
+
+			<div class="col-md-6 widget">
+				<div class="widget-body">
+					<p class="text-right">
+						Copyright &copy; 2014, Your awesome name here<br> 
+						Design: <a href="http://www.gettemplate.com" rel="designer">Initio by GetTemplate</a> </p>
+					</div>
+				</div>
+
+			</div> <!-- /row of widgets -->
+		</div>
+	</footer>
+
+
+
+	<!-- JavaScript libs are placed at the end of the document so the pages load faster -->
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+	<script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
+	<script src="assets/js/template.js"></script>
+</body>
+</html>

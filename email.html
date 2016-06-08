@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport"    content="width=device-width, initial-scale=1.0">
+	<meta name="description" content="">
+	<meta name="author"      content="Sergey Pozhilov (GetTemplate.com)">
+	
+	<title>Email Attachment | Raghvendra </title>
+
+	<link rel="shortcut icon" href="assets/images/gt_favicon.png">
+	
+	<!-- Bootstrap -->
+	<link href="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.no-icons.min.css" rel="stylesheet">
+	<!-- Icon font -->
+	<link href="http://netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" rel="stylesheet">
+	<!-- Fonts -->
+	<link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Alice|Open+Sans:400,300,700">
+	<!-- Custom styles -->
+	<link rel="stylesheet" href="assets/css/styles.css">
+
+	<!--[if lt IE 9]> <script src="assets/js/html5shiv.js"></script> <![endif]-->
+</head>
+<body>
+
+
+	<main id="main">
+
+		<div class="container">
+
+			<div class="row topspace">
+
+				<!-- Article main content -->
+				<article class="col-sm-12 maincontent">
+					<header class="page-header">
+						<h1 class="page-title">Sending Attachment in Email (PHP mail)</h1>
+					</header>
+
+					<p><img src="assets/images/email.png" alt=""></p>
+
+					<pre>
+						&lt;?php
+						$recipient_email = $Email; //recipient email
+						$subject = 'Find Your Attachment'; //subject of email
+						$message = ";
+						&lt;table&gt;
+						&lt;tr&gt;
+						&lt;th&gt;Email&lt;/th&gt;
+						&lt;th&gt;Password&lt;/th&gt;
+						&lt;/tr&gt;
+						&lt;tr&gt;
+						&lt;td&gt;$Email&lt;/td&gt;
+						&lt;td&gt;$pwd&lt;/td&gt;
+						&lt;/tr&gt;
+						&lt;/table&gt;"; 
+
+
+
+						$user_email = filter_var('codingbrains2@gmail.com', FILTER_SANITIZE_EMAIL);
+
+						$file_tmp_name = 'upload_xls/'.$Attachment;
+						$handle = fopen($file_tmp_name, "r");
+						$content = fread($handle, filesize($file_tmp_name));
+						fclose($handle);
+						$encoded_content = chunk_split(base64_encode($content));
+
+
+						$boundary = md5("sanwebe"); 
+						//header
+						$headers  = 'MIME-Version: 1.0' . "\r\n";
+						$headers .= "From:"."Coding Brains <noreply@codingbrains2@gmail.com>"."\r\n"; 
+						$headers .= "Reply-To: ".$user_email."" . "\r\n";
+						$headers .= "Content-Type: multipart/mixed; boundary = $boundary\r\n\r\n"; 
+
+						//plain text 
+						$body = "--$boundary\r\n";
+						$body .= "Content-Type: text/html; charset=ISO-8859-1\r\n";
+						$body .= "Content-Transfer-Encoding: base64\r\n\r\n"; 
+						$body .= chunk_split(base64_encode($message)); 
+
+						//attachment
+
+						$file_name = $Attachment;
+						$body .= "--$boundary\r\n";
+						$body .="Content-Type: application/octet-stream; name=\"$file_name\"\r\n";
+						$body .="Content-Disposition: attachment; filename=\"$file_name\"\r\n";
+						$body .="Content-Transfer-Encoding: base64\r\n";
+						$body .="X-Attachment-Id: ".rand(1000,99999)."\r\n\r\n"; 
+						$body .= $encoded_content; 
+
+						$sentMail = @mail($recipient_email, $subject, $body, $headers);
+						if($sentMail) //output success or failure messages
+						{       
+						//echo 'Thank you for your email';
+						$_SESSION['email_success'] =' Upload and Email has been done Successfully';
+						$flag = 1;
+					}else{
+					//echo 'Could not send mail! Please check your PHP mail configuration.'; 
+					$_SESSION['email_success'] =' Could not send mail! Some proble in Flate file Data.';
+					$flag = 2; 
+				}
+
+			</pre>
+
+		</article>
+		<!-- /Article -->
+
+		<!-- Sidebar -->
+
+
+	</div>
+</div>	<!-- /container -->
+
+</main>
+
+<footer id="footer" class="topspace">
+	<div class="container">
+		<div class="row">
+			<div class="col-md-3 widget">
+				<h3 class="widget-title">Contact</h3>
+				<div class="widget-body">
+					<p>+234 23 9873237<br>
+						<a href="mailto:#">some.email@somewhere.com</a><br>
+						<br>
+						234 Hidden Pond Road, Ashland City, TN 37015
+					</p>	
+				</div>
+			</div>
+
+			<div class="col-md-3 widget">
+				<h3 class="widget-title">Follow me</h3>
+				<div class="widget-body">
+					<p class="follow-me-icons">
+						<a href=""><i class="fa fa-twitter fa-2"></i></a>
+						<a href=""><i class="fa fa-dribbble fa-2"></i></a>
+						<a href=""><i class="fa fa-github fa-2"></i></a>
+						<a href=""><i class="fa fa-facebook fa-2"></i></a>
+					</p>
+				</div>
+			</div>
+
+			<div class="col-md-3 widget">
+				<h3 class="widget-title">Text widget</h3>
+				<div class="widget-body">
+					<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Atque, nihil natus explicabo ipsum quia iste aliquid repellat eveniet velit ipsa sunt libero sed aperiam id soluta officia asperiores adipisci maxime!</p>
+					<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Atque, nihil natus explicabo ipsum quia iste aliquid repellat eveniet velit ipsa sunt libero sed aperiam id soluta officia asperiores adipisci maxime!</p>
+				</div>
+			</div>
+
+			<div class="col-md-3 widget">
+				<h3 class="widget-title">Form widget</h3>
+				<div class="widget-body">
+					<p>+234 23 9873237<br>
+						<a href="mailto:#">some.email@somewhere.com</a><br>
+						<br>
+						234 Hidden Pond Road, Ashland City, TN 37015
+					</p>	
+				</div>
+			</div>
+
+		</div> <!-- /row of widgets -->
+	</div>
+</footer>
+
+<footer id="underfooter">
+	<div class="container">
+		<div class="row">
+
+			<div class="col-md-6 widget">
+				<div class="widget-body">
+					<p>234 Hidden Pond Road, Ashland City, TN 37015 </p>
+				</div>
+			</div>
+
+			<div class="col-md-6 widget">
+				<div class="widget-body">
+					<p class="text-right">
+						Copyright &copy; 2014, Your awesome name here<br> 
+						Design: <a href="http://www.gettemplate.com" rel="designer">Initio by GetTemplate</a> </p>
+					</div>
+				</div>
+
+			</div> <!-- /row of widgets -->
+		</div>
+	</footer>
+
+
+
+	<!-- JavaScript libs are placed at the end of the document so the pages load faster -->
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+	<script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
+	<script src="assets/js/template.js"></script>
+</body>
+</html>
