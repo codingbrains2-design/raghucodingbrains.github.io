@@ -1,0 +1,46 @@
+$from_email = 'sender_mail@example.com'; //sender email
+    $recipient_email = 'codingbrains2@gmail.com'; //recipient email
+    $subject = 'Test mail'; //subject of email
+    $message = 'This is body of the message'; //message body
+    
+
+    
+    $user_email = filter_var('codingbrains2@gmail.com', FILTER_SANITIZE_EMAIL);
+
+    $file_tmp_name = 'Admin/upload_xls/Chan Luu EDI PO (Saks 5th Ave) 2014-01-27 11_24 (1 PO) 0003611834....xls';
+    $handle = fopen($file_tmp_name, "r");
+    $content = fread($handle, filesize($file_tmp_name));
+    fclose($handle);
+    $encoded_content = chunk_split(base64_encode($content));
+
+
+    $boundary = md5("sanwebe"); 
+        //header
+    $headers = "MIME-Version: 1.0\r\n"; 
+    $headers .= "From:"."Coding Brains <noreply@codingbrains2@gmail.com>"."\r\n"; 
+    $headers .= "Reply-To: ".$user_email."" . "\r\n";
+    $headers .= "Content-Type: multipart/mixed; boundary = $boundary\r\n\r\n"; 
+
+        //plain text 
+    $body = "--$boundary\r\n";
+    $body .= "Content-Type: text/plain; charset=ISO-8859-1\r\n";
+    $body .= "Content-Transfer-Encoding: base64\r\n\r\n"; 
+    $body .= chunk_split(base64_encode($message)); 
+
+        //attachment
+
+    $file_name = "Chan Luu EDI PO (Saks 5th Ave) 2014-01-27 11_24 (1 PO) 0003611834....xls";
+    $body .= "--$boundary\r\n";
+    $body .="Content-Type: application/octet-stream; name=\"$file_name\"\r\n";
+    $body .="Content-Disposition: attachment; filename=\"$file_name\"\r\n";
+    $body .="Content-Transfer-Encoding: base64\r\n";
+    $body .="X-Attachment-Id: ".rand(1000,99999)."\r\n\r\n"; 
+    $body .= $encoded_content; 
+    
+    $sentMail = @mail($recipient_email, $subject, $body, $headers);
+    if($sentMail) //output success or failure messages
+    {       
+    	die('Thank you for your email');
+    }else{
+    	die('Could not send mail! Please check your PHP mail configuration.');  
+    }
