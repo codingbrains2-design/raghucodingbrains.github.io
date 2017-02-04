@@ -1,0 +1,26 @@
+<ion-header>
+
+	<ion-navbar color="primary">
+		<ion-title text-center>Parent Login</ion-title>
+	</ion-navbar>
+
+</ion-header>
+<ion-content   padding>
+	<form [formGroup]="parentLoginForm" (ngSubmit)="logForm()">
+		<ion-item>
+			<ion-label>Email</ion-label>
+			<ion-input type="text" formControlName="email"></ion-input>
+		</ion-item>
+		<div class="error" *ngIf="parentLoginForm.get('email').hasError('required') && parentLoginForm.get('email').touched">
+			Email is required
+		</div>
+		<ion-item>
+			<ion-label>Password</ion-label>
+			<ion-input type="text" formControlName="password"></ion-input>
+		</ion-item>
+		<div class="error" *ngIf="parentLoginForm.get('password').hasError('required') && parentLoginForm.get('password').touched">
+			Password is required
+		</div>
+		<button ion-button block type="submit" [disabled]="parentLoginForm.invalid">Submit</button>
+	</form>
+</ion-content>

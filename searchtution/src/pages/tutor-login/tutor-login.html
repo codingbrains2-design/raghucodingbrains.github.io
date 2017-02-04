@@ -1,0 +1,26 @@
+<ion-header>
+
+	<ion-navbar color="primary">
+		<ion-title text-center>Tutor Login</ion-title>
+	</ion-navbar>
+
+</ion-header>
+<ion-content   padding>
+	<form [formGroup]="tutorLoginForm" (ngSubmit)="logForm()">
+		<ion-item>
+			<ion-label>Email</ion-label>
+			<ion-input type="text" formControlName="email"></ion-input>
+		</ion-item>
+		<div class="error" *ngIf="tutorLoginForm.get('email').hasError('required') && tutorLoginForm.get('email').touched">
+			Email is required
+		</div>
+		<ion-item>
+			<ion-label>Password</ion-label>
+			<ion-input type="text" formControlName="password"></ion-input>
+		</ion-item>
+		<div class="error" *ngIf="tutorLoginForm.get('password').hasError('required') && tutorLoginForm.get('password').touched">
+			Password is required
+		</div>
+		<button ion-button block type="submit" [disabled]="tutorLoginForm.invalid">Submit</button>
+	</form>
+</ion-content>
