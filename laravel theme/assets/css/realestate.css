@@ -1,0 +1,354 @@
+
+/* Sticky footer styles
+-------------------------------------------------- */
+html {
+  position: relative;
+  min-height: 100%;
+}
+body {
+  font-family: 'Open Sans', sans-serif;
+  font-weight: 600;
+}
+
+*
+{
+ -webkit-border-radius: 0 !important;
+ -moz-border-radius: 0 !important;
+ -ms-border-radius: 0 !important;
+ -o-border-radius: 0 !important;
+ border-radius: 0 !important;
+}
+
+.navbar{
+  -webkit-border-radius: 0;
+  -moz-border-radius: 0;
+  -ms-border-radius: 0;
+  -o-border-radius: 0;
+  border-radius: 0;
+}
+
+.navbar .navbar-brand
+{
+  font-size: 2.5em;
+}
+
+.navbar .btn-orange
+{
+  margin-top: -7px;
+}
+
+@media(max-width: 768px){
+  .navbar .btn-orange
+  {
+    margin-top: 0px;
+  }
+}
+
+/*CAROUSEL LEFT RIGHT CIRCLE BUTTON*/
+
+.carousel {
+  position: relative;
+  margin-bottom: 20px;
+  margin-top: -20px;
+  line-height: 1;
+}
+.carousel-control {
+  position: absolute;
+  top: 50%;
+  left: 15px;
+  width: 30px;
+  height: 30px;
+  margin-top: -20px;
+  font-size: 30px;
+  font-weight: 100;
+  line-height: 20px;
+  color: #ffffff;
+  text-align: center;
+  background: #222222;
+  border: 3px solid #ffffff;
+  -webkit-border-radius: 23px;
+  -moz-border-radius: 23px;
+  border-radius: 23px;
+  opacity: 0.5;
+  filter: alpha(opacity=50);
+}
+.carousel-control.right {
+  left: auto;
+  right: 15px;
+}
+.carousel-control:hover,
+.carousel-control:focus {
+  color: #ffffff;
+  text-decoration: none;
+  opacity: 0.9;
+  filter: alpha(opacity=90);
+}
+
+.breadcrumb
+{
+  background:#333333;
+  margin-top: -20px;
+}
+.breadcrumb li a
+{
+  color:#FFFFFF;
+}
+
+.container-box
+{
+  background-color: #333333;
+  color: #FFFFFF;
+  padding: 20px;
+}
+
+#searchProperty .col-md-3
+{
+  margin:15px 0;
+}
+
+#searchPropertyBtn
+{
+  margin-top: -40px;
+}
+
+/*calculator button */
+.btn-calc{
+  font-size: 1em;
+}
+
+@media(max-width: 420px){
+  .btn-calc{
+    font-size: 14px;
+  }
+}
+
+@media(max-width: 420px){
+  #searchPropertyBtn span button
+  {
+    font-size: 12px;
+  }
+}
+
+.hero-section
+{
+  margin-top: 10px;
+  background-color: #E89A2F;
+  padding:30px 0
+}
+
+.hero-btn button
+{
+  margin: 0 15px;
+}
+
+.div-pattern
+{
+  background:url(../img/div-pattern.png)repeat-x;
+  width:100%;
+  height:30px;
+}
+
+.our-partners
+{
+  width: 150px;
+  height: 100px;
+  display: inline-block;
+  margin: 15px;
+}
+
+
+#map-box
+{
+  height:355px;
+}
+/*=====================================
+=            about-us.html            =
+=====================================*/
+#about_us
+{
+ padding:100px 0;
+ min-height: 490px;
+ background: url(../img/login-banner.jpg) no-repeat;
+ background-size: cover;
+}
+
+#about_us h1
+{
+  font-size: 4em;
+  color:#333333;
+  font-weight: 800;
+}
+#about_us button
+{
+  border-radius: 50px !important;
+  font-size: 3em;
+  font-weight: 800;
+}
+
+@media(max-width: 768px){
+
+  #about_us h1
+  {
+    font-size: 2em;
+    color:#333333;
+    font-weight: 800;
+  }
+  #about_us button
+  {
+    border-radius: 50px !important;
+    font-size: 2em;
+    font-weight: 800;
+  }
+
+}
+
+/*==================================
+=            agent.html            =
+==================================*/
+#agent
+{
+ padding:100px 0;
+ min-height: 490px;
+ background: url(../img/login-banner.jpg) no-repeat;
+ background-size: cover;
+ color:#003171;
+}
+
+#agent ul li, #agent ul li a 
+{
+  color:#003171;
+  font-size: 1.1em;
+}
+
+/*=======================================
+=            properties.html            =
+=======================================*/
+.btn-trans
+{
+  color:#333333;
+  background-color: transparent;
+  border-radius: 25px !important;
+  border:2px solid #333333;
+  transition:0.2s linear all;
+}
+.btn-trans:hover
+{
+  background-color: #333333;
+  border:2px solid #333333;
+  border-radius: 25px !important;
+  transition:0.2s linear all;
+}
+
+/*==================================
+=            login.html            =
+==================================*/
+#login_section
+{
+  padding:100px 0;
+  background: url(../img/login-banner.jpg) no-repeat;
+  background-size: cover;
+}
+
+.highlight
+{
+  color:#22A7F0;
+}
+
+
+/*=========================================
+=            registration.html            =
+=========================================*/
+#register_section
+{
+  padding:100px 0;
+  /*min-height:490px;*/
+  background: url(../img/login-banner.jpg) no-repeat;
+  background-size: cover;
+}
+
+/*====================================
+=            pricing.html            =
+====================================*/
+.btn-orange
+{
+  border:2px solid #ec971f;
+  border-radius: 25px !important;
+  color:#ec971f;
+  background-color: transparent;
+  transition:0.2s linear all;
+}
+
+.hero-price-section
+{
+  margin-top: 10px;
+  background-color: #333333;
+  color:#FFFFFF;
+  padding:20px 0;
+}
+
+/*====================================
+=            contact.html            =
+====================================*/
+#contact_section
+{
+  padding:25px 0;
+}
+#map-container
+{
+  height:557px;
+}
+
+
+
+/*======================================
+=            FOOTER SECTION            =
+======================================*/
+footer {
+  color:#999999;
+  background-color: #333333;
+  bottom: 0;
+  line-height: 1.5em;
+  padding:25px;
+  font-weight: 800;
+}
+
+footer h3
+{
+  padding:15px 0;
+  font-weight: 800;
+  color:#FFFFFF;
+}
+
+footer span i
+{
+  background-color: #256;
+  transition:0.3s linear all;
+}
+footer span i:hover
+{
+  background-color: #654;
+  transition:0.3s linear all;
+}
+
+footer #quickLinks a
+{
+  margin-left: -15px;
+  text-align: left;
+  display:block;
+  color:#999999;
+  font-weight: bold;
+}
+
+footer #quickLinks a:hover
+{
+  color:#FFFFFF;
+}
+
+.copyright
+{
+  text-align: center;
+  color:#FFFFFF;
+  font-weight: bold;
+  background-color: #000000;
+  padding:20px;
+}
