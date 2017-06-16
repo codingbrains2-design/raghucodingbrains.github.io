@@ -1,3 +1,4 @@
+///
 $from_email = 'sender_mail@example.com'; //sender email
     $recipient_email = 'codingbrains2@gmail.com'; //recipient email
     $subject = 'Test mail'; //subject of email
